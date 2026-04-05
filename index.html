@@ -533,44 +533,53 @@ function fmtFull(n) {
 
 async function loadData() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=Sheet1`;
-    const resp = await fetch(url);
-    const csv = await resp.text();
-    const rows = csv.trim().split('\n').map(r => {
-      const result = [];
-      let cur = '', inQ = false;
-      for (let c of r) {
-        if (c === '"') { inQ = !inQ; continue; }
-        if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; continue; }
-        cur += c;
+    function cellVal(cell) {
+      if (!cell) return null;
+      return cell.v !== undefined && cell.v !== null ? cell.v : null;
+    }
+
+    function parseGvizDate(cell) {
+      if (!cell || cell.v === null || cell.v === undefined) return '';
+      if (cell.f) return cell.f.substring(0,10);
+      const v = String(cell.v);
+      if (v.startsWith('Date(')) {
+        const p = v.replace('Date(','').replace(')','').split(',');
+        const y = parseInt(p[0]), m = parseInt(p[1])+1, d = parseInt(p[2]);
+        return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       }
-      result.push(cur.trim());
-      return result;
-    });
+      return v.substring(0,10);
+    }
 
-    const headers = rows[0];
-    const dataRows = rows.slice(1).filter(r => r[0]);
+    const [dealsResp, summaryResp] = await Promise.all([
+      fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`),
+      fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Summary`)
+    ]);
 
-    pipelineData = dataRows.map(r => ({
-      name: r[0] || '',
-      arr: parseFloat(r[1]) || 0,
-      stage: r[2] || '',
-      closeDate: r[3] || '',
-      forecast: r[4] || '',
-      owner: r[5] || '',
-      lastActivity: r[6] || '',
-      daysSilent: r[7] === 'N/A' || r[7] === '' ? null : parseInt(r[7]),
-      totalDeals: parseInt(r[8]) || null,
-      totalArr: parseFloat(r[9]) || null,
-      commitArr: parseFloat(r[10]) || null,
-      commitDeals: parseInt(r[11]) || null,
-    }));
+    const dealsText = await dealsResp.text();
+    const summaryText = await summaryResp.text();
 
+    const dealsJson = JSON.parse(dealsText.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+    const summaryJson = JSON.parse(summaryText.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
+
+    pipelineData = dealsJson.table.rows
+      .filter(r => cellVal(r.c[0]))
+      .map(r => ({
+        name: cellVal(r.c[0]) || '',
+        arr: parseFloat(cellVal(r.c[1])) || 0,
+        stage: cellVal(r.c[2]) || '',
+        closeDate: parseGvizDate(r.c[3]),
+        forecast: cellVal(r.c[4]) || '',
+        owner: cellVal(r.c[5]) || '',
+        lastActivity: parseGvizDate(r.c[6]),
+        daysSilent: !cellVal(r.c[7]) || cellVal(r.c[7]) === 'N/A' ? null : parseInt(cellVal(r.c[7])),
+      }));
+
+    const sRow = summaryJson.table.rows[0];
     summaryData = {
-      totalDeals: pipelineData[0]?.totalDeals || 189,
-      totalArr: pipelineData[0]?.totalArr || 0,
-      commitArr: pipelineData[0]?.commitArr || 0,
-      commitDeals: pipelineData[0]?.commitDeals || 0,
+      totalDeals: parseInt(cellVal(sRow?.c[0])) || 189,
+      totalArr: parseFloat(cellVal(sRow?.c[1])) || 0,
+      commitArr: parseFloat(cellVal(sRow?.c[2])) || 0,
+      commitDeals: parseInt(cellVal(sRow?.c[3])) || 0,
     };
 
     renderDashboard();
@@ -578,6 +587,7 @@ async function loadData() {
     document.getElementById('dashboard').style.display = 'block';
     document.getElementById('last-updated').textContent = 'Data as of ' + TODAY;
   } catch(e) {
+    console.error(e);
     document.getElementById('main-loading').innerHTML = '<div style="color:#c0392b;font-size:14px;text-align:center;padding:2rem;">Unable to load pipeline data.<br><span style="font-size:12px;color:#a09f9a;margin-top:8px;display:block;">Ensure the Google Sheet is publicly accessible (Anyone with link → Viewer)</span></div>';
   }
 }
