@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neo — Pipeline Intelligence · TestNew AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f3ef;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.09);
+    --border-mid: rgba(0,0,0,0.14);
+    --text: #111110;
+    --text-2: #6b6a66;
+    --text-3: #a09f9a;
+    --red: #c0392b;
+    --red-bg: #fdf0ee;
+    --red-border: rgba(192,57,43,0.2);
+    --amber: #b45309;
+    --amber-bg: #fef8ec;
+    --green: #2d6a4f;
+    --green-bg: #edf7f2;
+    --blue: #1a5fa8;
+    --blue-bg: #eef4fc;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  .shell {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* Header */
+  .hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .hdr-left { display: flex; align-items: center; gap: 12px; }
+  .hdr-icon {
+    width: 36px; height: 36px;
+    background: #111110;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+  .hdr-title { font-size: 15px; font-weight: 500; }
+  .hdr-sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+  .hdr-right { text-align: right; }
+  .hdr-date { font-size: 12px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+  .hdr-refresh { font-size: 11px; color: var(--text-3); margin-top: 2px; cursor: pointer; }
+  .hdr-refresh:hover { color: var(--text-2); }
+
+  /* Alert bar */
+  .alert {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--red-border);
+    background: var(--red-bg);
+    color: var(--red);
+  }
+  .alert.visible { display: flex; }
+  .alert-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Metrics */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .metric-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text);
+  }
+  .metric-sub {
+    font-size: 11px;
+    color: var(--text-2);
+    margin-top: 5px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .badge-red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(180,83,9,0.2); }
+  .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(45,106,79,0.2); }
+
+  /* Two col */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .panel-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+
+  /* Deals */
+  .deal {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .deal:last-child { border-bottom: none; padding-bottom: 0; }
+  .deal:first-child { padding-top: 0; }
+  .deal-indicator {
+    width: 3px;
+    border-radius: 2px;
+    align-self: stretch;
+    flex-shrink: 0;
+    min-height: 40px;
+  }
+  .deal-body { flex: 1; min-width: 0; }
+  .deal-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .deal-meta { font-size: 11px; color: var(--text-2); margin-top: 3px; }
+  .deal-right { text-align: right; flex-shrink: 0; }
+  .deal-arr { font-size: 13px; font-weight: 500; font-family: 'DM Mono', monospace; }
+  .deal-stage { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+
+  /* Forecast */
+  .fc-row {
+    display: flex;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    gap: 10px;
+  }
+  .fc-row:last-child { border-bottom: none; }
+  .fc-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .fc-cat { color: var(--text-2); flex: 1; }
+  .fc-ct { font-size: 11px; color: var(--text-3); }
+  .fc-val { font-weight: 500; font-family: 'DM Mono', monospace; font-size: 13px; }
+
+  /* Progress bar */
+  .prog-wrap { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .prog-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+  .prog-track {
+    height: 5px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .prog-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+  /* Q&A */
+  .qa-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 1.25rem;
+  }
+  .qa-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+  .quick-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .quick-btn {
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 5px 12px;
+    border: 1px solid var(--border-mid);
+    border-radius: 20px;
+    background: var(--surface);
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quick-btn:hover { background: var(--bg); color: var(--text); border-color: var(--text-3); }
+  .qa-messages {
+    max-height: 280px;
+    overflow-y: auto;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg { display: flex; }
+  .msg.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 82%;
+    padding: 9px 13px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .bubble-neo {
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 4px 12px 12px 12px;
+    border: 1px solid var(--border);
+  }
+  .bubble-user {
+    background: #111110;
+    color: #f4f3ef;
+    border-radius: 12px 4px 12px 12px;
+  }
+  .qa-input-row { display: flex; gap: 8px; }
+  .qa-input {
+    flex: 1;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 9px 13px;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .qa-input:focus { border-color: #111110; background: var(--surface); }
+  .qa-input::placeholder { color: var(--text-3); }
+  .qa-send {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 18px;
+    border: 1px solid #111110;
+    border-radius: var(--radius-sm);
+    background: #111110;
+    color: #f4f3ef;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .qa-send:hover { opacity: 0.85; }
+  .qa-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Thinking dots */
+  .thinking { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .tdot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-3); animation: tdot 1.2s infinite; }
+  .tdot:nth-child(2) { animation-delay: 0.2s; }
+  .tdot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes tdot { 0%,80%,100%{opacity:0.3;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+  /* Full deals table */
+  .full-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .full-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    text-align: left;
+    padding: 8px 14px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    background: var(--bg);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .mono { font-family: 'DM Mono', monospace; }
+  .silent-high { color: var(--red); font-weight: 500; }
+  .silent-mid { color: var(--amber); }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 40vh;
+    gap: 16px;
+    color: var(--text-3);
+    font-size: 14px;
+  }
+  .load-dots { display: flex; gap: 6px; }
+  .load-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); animation: tdot 1.2s infinite; }
+  .load-dot:nth-child(2) { animation-delay: 0.2s; }
+  .load-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  /* Footer */
+  .footer { text-align: center; font-size: 11px; color: var(--text-3); margin-top: 2rem; }
+
+  @media (max-width: 640px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .hdr-sub, .hdr-right { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-icon">N</div>
+      <div>
+        <div class="hdr-title">Neo — Pipeline Intelligence</div>
+        <div class="hdr-sub">TestNew AI · CEO Dashboard</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-date" id="hdr-date">Loading...</div>
+      <div class="hdr-refresh" onclick="loadData()">↻ Refresh</div>
+    </div>
+  </div>
+
+  <div id="main-loading" class="loading">
+    <div class="load-dots">
+      <div class="load-dot"></div>
+      <div class="load-dot"></div>
+      <div class="load-dot"></div>
+    </div>
+    <span>Loading live pipeline data...</span>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="alert" id="alert-bar">
+      <div class="alert-dot"></div>
+      <span id="alert-text"></span>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">Pipeline ARR</div>
+        <div class="metric-value" id="m-arr">—</div>
+        <div class="metric-sub" id="m-deals">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Coverage</div>
+        <div class="metric-value" id="m-cov">—</div>
+        <div class="metric-sub">vs $2.05M target</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Commit forecast</div>
+        <div class="metric-value" id="m-commit">—</div>
+        <div class="metric-sub" id="m-commit-sub">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Commit deals</div>
+        <div class="metric-value" id="m-commitdeals">—</div>
+        <div class="metric-sub">of <span id="m-total">—</span> total</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-title">Top deals at risk</div>
+        <div id="deals-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Forecast breakdown</div>
+        <div id="forecast-list"></div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>Commit to target</span><span id="prog-commit-pct">—</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-commit" style="background:#c0392b;width:0%"></div></div>
+          <div class="prog-label"><span>Total pipeline to target</span><span id="prog-pipe-pct">—</span></div>
+          <div class="prog-track"><div class="prog-fill" id="prog-pipe" style="background:#2d6a4f;width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-panel">
+      <div class="qa-title">Ask Neo</div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="ask('Which deals close this month?')">Deals closing this month</button>
+        <button class="quick-btn" onclick="ask('Who are the most at-risk owners?')">Most at-risk owners</button>
+        <button class="quick-btn" onclick="ask('What should I prioritise today?')">What to prioritise today</button>
+        <button class="quick-btn" onclick="ask('Which trials are going dark?')">Trials going dark</button>
+        <button class="quick-btn" onclick="ask('What is the commit gap and how do we close it?')">How to close commit gap</button>
+      </div>
+      <div class="qa-messages" id="qa-messages">
+        <div class="msg">
+          <div class="bubble bubble-neo" id="neo-greeting">Loading pipeline data...</div>
+        </div>
+      </div>
+      <div class="qa-input-row">
+        <input class="qa-input" id="qa-input" placeholder="Ask about any deal, owner, or stage..." onkeydown="if(event.key==='Enter')sendQ()" />
+        <button class="qa-send" id="qa-send" onclick="sendQ()">Ask ↗</button>
+      </div>
+    </div>
+
+    <div class="full-panel">
+      <div class="full-panel-header">
+        <div class="panel-title" style="margin:0;">Top 10 deals by ARR</div>
+        <div style="font-size:11px;color:var(--text-3);" id="last-updated">—</div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Deal</th>
+              <th>ARR</th>
+              <th>Stage</th>
+              <th>Forecast</th>
+              <th>Owner</th>
+              <th>Close date</th>
+              <th>Days silent</th>
+            </tr>
+          </thead>
+          <tbody id="deals-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">Neo · TestNew AI RevOps · Data refreshed every weekday at 8AM IST</div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID = '1FqOZYR5fShPkCb9jRGHNVYE5ebbhlsJE_rN0X4U0lYQ';
+const QUARTERLY_TARGET = 2050000;
+const TODAY = new Date().toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+
+let pipelineData = [];
+let summaryData = {};
+let qaHistory = [];
+
+document.getElementById('hdr-date').textContent = TODAY;
+
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  n = parseFloat(n);
+  if (n >= 1000000) return '$' + (n/1000000).toFixed(2) + 'M';
+  if (n >= 1000) return '$' + Math.round(n/1000) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+
+function fmtFull(n) {
+  if (!n && n !== 0) return '—';
+  return '$' + Math.round(parseFloat(n)).toLocaleString();
+}
+
+async function loadData() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=Sheet1`;
+    const resp = await fetch(url);
+    const csv = await resp.text();
+    const rows = csv.trim().split('\n').map(r => {
+      const result = [];
+      let cur = '', inQ = false;
+      for (let c of r) {
+        if (c === '"') { inQ = !inQ; continue; }
+        if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; continue; }
+        cur += c;
+      }
+      result.push(cur.trim());
+      return result;
+    });
+
+    const headers = rows[0];
+    const dataRows = rows.slice(1).filter(r => r[0]);
+
+    pipelineData = dataRows.map(r => ({
+      name: r[0] || '',
+      arr: parseFloat(r[1]) || 0,
+      stage: r[2] || '',
+      closeDate: r[3] || '',
+      forecast: r[4] || '',
+      owner: r[5] || '',
+      lastActivity: r[6] || '',
+      daysSilent: r[7] === 'N/A' || r[7] === '' ? null : parseInt(r[7]),
+      totalDeals: parseInt(r[8]) || null,
+      totalArr: parseFloat(r[9]) || null,
+      commitArr: parseFloat(r[10]) || null,
+      commitDeals: parseInt(r[11]) || null,
+    }));
+
+    summaryData = {
+      totalDeals: pipelineData[0]?.totalDeals || 189,
+      totalArr: pipelineData[0]?.totalArr || 0,
+      commitArr: pipelineData[0]?.commitArr || 0,
+      commitDeals: pipelineData[0]?.commitDeals || 0,
+    };
+
+    renderDashboard();
+    document.getElementById('main-loading').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('last-updated').textContent = 'Data as of ' + TODAY;
+  } catch(e) {
+    document.getElementById('main-loading').innerHTML = '<div style="color:#c0392b;font-size:14px;text-align:center;padding:2rem;">Unable to load pipeline data.<br><span style="font-size:12px;color:#a09f9a;margin-top:8px;display:block;">Ensure the Google Sheet is publicly accessible (Anyone with link → Viewer)</span></div>';
+  }
+}
+
+function renderDashboard() {
+  const { totalDeals, totalArr, commitArr, commitDeals } = summaryData;
+  const coverage = totalArr / QUARTERLY_TARGET;
+  const commitPct = Math.round((commitArr / QUARTERLY_TARGET) * 100);
+  const pipePct = Math.min(Math.round((totalArr / QUARTERLY_TARGET) * 100), 100);
+
+  let covBadge = coverage >= 3 ? '<span class="badge badge-green">GREEN</span>' : coverage >= 2 ? '<span class="badge badge-amber">AMBER</span>' : '<span class="badge badge-red">RED</span>';
+  let commitStatus = commitPct >= 80 ? 'STRONG' : commitPct >= 50 ? 'MODERATE' : 'WEAK';
+  let commitBadgeClass = commitPct >= 80 ? 'badge-green' : commitPct >= 50 ? 'badge-amber' : 'badge-red';
+
+  document.getElementById('m-arr').innerHTML = fmt(totalArr);
+  document.getElementById('m-deals').textContent = totalDeals + ' open deals';
+  document.getElementById('m-cov').innerHTML = coverage.toFixed(1) + 'x ' + covBadge;
+  document.getElementById('m-commit').textContent = fmt(commitArr);
+  document.getElementById('m-commit-sub').innerHTML = `<span class="badge ${commitBadgeClass}">${commitStatus} · ${commitPct}%</span>`;
+  document.getElementById('m-commitdeals').textContent = commitDeals;
+  document.getElementById('m-total').textContent = totalDeals;
+
+  if (coverage < 2) {
+    const alertBar = document.getElementById('alert-bar');
+    alertBar.classList.add('visible');
+    document.getElementById('alert-text').innerHTML = `<strong>Red alert</strong> — Pipeline coverage at ${coverage.toFixed(1)}x. Commit at ${commitPct}% of quarterly target. Immediate intervention required.`;
+  }
+
+  setTimeout(() => {
+    document.getElementById('prog-commit').style.width = Math.min(commitPct, 100) + '%';
+    document.getElementById('prog-pipe').style.width = pipePct + '%';
+  }, 300);
+  document.getElementById('prog-commit-pct').textContent = commitPct + '%';
+  document.getElementById('prog-pipe-pct').textContent = pipePct + '%';
+
+  renderDealsAtRisk();
+  renderForecast();
+  renderDealsTable();
+  updateGreeting();
+}
+
+function renderDealsAtRisk() {
+  const atRisk = pipelineData
+    .filter(d => ['Trial', 'Proposal', 'Trial on Hold', 'Post Trial Discussion'].some(s => d.stage.includes(s)))
+    .sort((a,b) => b.arr - a.arr)
+    .slice(0, 3);
+
+  const colors = ['#c0392b', '#c0392b', '#b45309'];
+  const container = document.getElementById('deals-list');
+  container.innerHTML = atRisk.map((d, i) => `
+    <div class="deal">
+      <div class="deal-indicator" style="background:${colors[i]};"></div>
+      <div class="deal-body">
+        <div class="deal-name" title="${d.name}">${d.name}</div>
+        <div class="deal-meta">${d.owner}${d.daysSilent !== null ? ' · ' + d.daysSilent + ' days silent' : ''}</div>
+      </div>
+      <div class="deal-right">
+        <div class="deal-arr">${fmtFull(d.arr)}</div>
+        <div class="deal-stage">${d.stage}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderForecast() {
+  const cats = [
+    { label: 'Commit', color: '#c0392b' },
+    { label: 'Best Case', color: '#b45309' },
+    { label: 'High', color: '#1a5fa8' },
+    { label: 'Low', color: '#a09f9a' },
+  ];
+
+  const byForecast = {};
+  pipelineData.forEach(d => {
+    if (!byForecast[d.forecast]) byForecast[d.forecast] = { arr: 0, count: 0 };
+    byForecast[d.forecast].arr += d.arr;
+    byForecast[d.forecast].count++;
+  });
+
+  const container = document.getElementById('forecast-list');
+  container.innerHTML = cats.map(c => {
+    const f = byForecast[c.label] || { arr: 0, count: 0 };
+    return `
+      <div class="fc-row">
+        <div class="fc-dot" style="background:${c.color};"></div>
+        <div class="fc-cat">${c.label} <span class="fc-ct">${f.count} deals</span></div>
+        <div class="fc-val">${fmtFull(f.arr)}</div>
+      </div>
+    `;
+  }).join('') + (summaryData.commitArr ? `
+    <div class="fc-row" style="margin-top:4px;">
+      <div class="fc-dot" style="background:#c0392b;"></div>
+      <div class="fc-cat">Total commit <span class="fc-ct">${summaryData.commitDeals} deals</span></div>
+      <div class="fc-val">${fmtFull(summaryData.commitArr)}</div>
+    </div>
+  ` : '');
+}
+
+function renderDealsTable() {
+  const tbody = document.getElementById('deals-table');
+  tbody.innerHTML = pipelineData.map((d, i) => {
+    const silentClass = d.daysSilent > 30 ? 'silent-high' : d.daysSilent > 14 ? 'silent-mid' : '';
+    const silentText = d.daysSilent !== null ? d.daysSilent + 'd' : 'N/A';
+    return `
+      <tr>
+        <td style="color:var(--text-3);">${i+1}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${d.name}">${d.name}</td>
+        <td class="mono">${fmtFull(d.arr)}</td>
+        <td>${d.stage}</td>
+        <td>${d.forecast}</td>
+        <td>${d.owner}</td>
+        <td class="mono" style="color:var(--text-2);">${d.closeDate}</td>
+        <td class="mono ${silentClass}">${silentText}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function buildContext() {
+  const { totalDeals, totalArr, commitArr, commitDeals } = summaryData;
+  const coverage = (totalArr / QUARTERLY_TARGET).toFixed(1);
+  const commitPct = Math.round((commitArr / QUARTERLY_TARGET) * 100);
+
+  const dealLines = pipelineData.map((d, i) =>
+    `${i+1}. ${d.name} | ARR: $${d.arr.toLocaleString()} | Stage: ${d.stage} | Forecast: ${d.forecast} | Owner: ${d.owner} | Days silent: ${d.daysSilent !== null ? d.daysSilent : 'unknown'} | Close: ${d.closeDate}`
+  ).join('\n');
+
+  return `You are Neo, AI RevOps Chief of Staff for TestNew AI (formerly LambdaTest). Answer CEO questions about pipeline data. Be direct, specific, use exact numbers. 2-4 sentences max. Never hedge.
+
+LIVE DATA (${TODAY}):
+Quarterly target: $${QUARTERLY_TARGET.toLocaleString()}
+Total pipeline: $${Math.round(totalArr).toLocaleString()} | ${totalDeals} deals | ${coverage}x coverage
+Commit forecast: $${Math.round(commitArr).toLocaleString()} (${commitDeals} deals) — ${commitPct}% of target
+
+TOP 10 DEALS:
+${dealLines}
+
+Respond as a sharp RevOps Chief of Staff briefing the CEO. One clear recommendation per answer.`;
+}
+
+function updateGreeting() {
+  const { totalArr, commitArr } = summaryData;
+  const coverage = (totalArr / QUARTERLY_TARGET).toFixed(1);
+  const commitPct = Math.round((commitArr / QUARTERLY_TARGET) * 100);
+  const status = parseFloat(coverage) < 2 ? 'in red' : parseFloat(coverage) < 3 ? 'amber' : 'healthy';
+  document.getElementById('neo-greeting').textContent = `Good ${getTimeOfDay()}. Pipeline is ${status} — ${coverage}x coverage, commit at ${commitPct}% of target. Ask me about any deal, owner, or what to prioritise.`;
+}
+
+function getTimeOfDay() {
+  const h = new Date().getHours();
+  return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+}
+
+async function sendQ() {
+  const input = document.getElementById('qa-input');
+  const send = document.getElementById('qa-send');
+  const q = input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  send.disabled = true;
+  appendMsg(q, 'user');
+  const thinkId = appendThinking();
+  qaHistory.push({ role: 'user', content: q });
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildContext(),
+        messages: qaHistory
+      })
+    });
+    const data = await resp.json();
+    const reply = data.content?.[0]?.text || 'Unable to get a response.';
+    qaHistory.push({ role: 'assistant', content: reply });
+    removeThinking(thinkId);
+    appendMsg(reply, 'neo');
+  } catch(e) {
+    removeThinking(thinkId);
+    appendMsg('Connection error. Please try again.', 'neo');
+  }
+
+  send.disabled = false;
+  input.focus();
+}
+
+function ask(q) {
+  document.getElementById('qa-input').value = q;
+  sendQ();
+}
+
+function appendMsg(text, role) {
+  const wrap = document.getElementById('qa-messages');
+  const div = document.createElement('div');
+  div.className = 'msg' + (role === 'user' ? ' user' : '');
+  div.innerHTML = `<div class="bubble bubble-${role === 'user' ? 'user' : 'neo'}">${text.replace(/\n/g,'<br>')}</div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function appendThinking() {
+  const wrap = document.getElementById('qa-messages');
+  const id = 'think-' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'msg'; div.id = id;
+  div.innerHTML = `<div class="bubble bubble-neo"><div class="thinking"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return id;
+}
+
+function removeThinking(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+loadData();
+</script>
+</body>
+</html>
