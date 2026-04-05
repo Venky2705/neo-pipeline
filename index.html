@@ -799,7 +799,8 @@ function appendMsg(text, role) {
   const wrap = document.getElementById('qa-messages');
   const div = document.createElement('div');
   div.className = 'msg' + (role === 'user' ? ' user' : '');
-  div.innerHTML = `<div class="bubble bubble-${role === 'user' ? 'user' : 'neo'}">${text.replace(/\n/g,'<br>')}</div>`;
+ const formatted = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+div.innerHTML = `<div class="bubble bubble-${role === 'user' ? 'user' : 'neo'}">${formatted}</div>`;
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
 }
