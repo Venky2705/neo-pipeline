@@ -766,7 +766,18 @@ const resp = await fetch('https://api.anthropic.com/v1/messages', {
       })
     });
     const data = await resp.json();
-    const reply = data.content?.[0]?.text || 'Unable to get a response.';
+    if (data.error) {
+  if (data.error.type === 'authentication_error') {
+    localStorage.removeItem('neo_api_key');
+    removeThinking(thinkId);
+    appendMsg('Invalid API key — cleared. Click Ask again to re-enter.', 'neo');
+    send.disabled = false;
+    input.focus();
+    return;
+  }
+  throw new Error(data.error.message);
+}
+const reply = data.content?.[0]?.text || 'Unable to get a response.';
     qaHistory.push({ role: 'assistant', content: reply });
     removeThinking(thinkId);
     appendMsg(reply, 'neo');
